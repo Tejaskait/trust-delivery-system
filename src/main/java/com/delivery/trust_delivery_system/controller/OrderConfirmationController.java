@@ -17,19 +17,15 @@ public class OrderConfirmationController {
 
     @Autowired private OrderRepository orderRepository;
     @Autowired private OrderConfirmationRepository confirmationRepository;
-    @Autowired private OrderAssignmentRepository assignmentRepository;
 
     @GetMapping("/{orderId}")
     public String showConfirmation(@PathVariable Long orderId, Model model) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
-        // Find the confirmation record
         Optional<OrderConfirmation> confirmationOpt = confirmationRepository.findByOrderId(orderId);
 
         model.addAttribute("order", order);
-        
-        // If it's present, add to model. If not, Thymeleaf must check for null!
         confirmationOpt.ifPresent(c -> model.addAttribute("conf", c));
         
         return "order_confirmation";
@@ -38,13 +34,17 @@ public class OrderConfirmationController {
     @PostMapping("/tick")
     public String handleTick(@RequestParam Long orderId, @AuthenticationPrincipal UserDetails userDetails) {
         OrderConfirmation oc = confirmationRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new RuntimeException("Cannot confirm an order that hasn't been accepted by an agent."));
+                .orElseThrow(() -> new RuntimeException("Confirmation record not found."));
         
         String role = userDetails.getAuthorities().iterator().next().getAuthority();
 
         if (role.equals("ROLE_CUSTOMER")) {
             oc.setCustomerConfirmed(true);
         } else if (role.equals("ROLE_DELIVERY")) {
+            // STRICT LOGIC: Delivery man can only tick IF customer has already ticked
+            if (!oc.isCustomerConfirmed()) {
+                throw new RuntimeException("Security Protocol: Customer must mark 'Parcel Received' before you can mark 'Delivered'.");
+            }
             oc.setDeliveryConfirmed(true);
         }
 

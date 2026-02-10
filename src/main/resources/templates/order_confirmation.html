@@ -74,30 +74,32 @@
 <div class="container main-wrapper">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="handoff-container" th:with="isCustomer=${#authorization.expression('hasRole(''ROLE_CUSTOMER'')')}, 
-                                                   isAgent=${#authorization.expression('hasRole(''ROLE_DELIVERY'')')}">
+            <div class="handoff-container">
                 
                 <div class="text-center mb-5">
                     <h1 class="fw-bold mb-2">Secure Handoff</h1>
                     <p class="text-secondary">Order ID: <span th:text="${order.id}" class="text-white">#001</span></p>
                 </div>
 
-                <div class="row g-4 justify-content-center">
+                <div class="row g-4 justify-content-center" 
+                     th:with="isCustomer=${#authorization.expression('hasRole(''ROLE_CUSTOMER'')')}, 
+                              isAgent=${#authorization.expression('hasRole(''ROLE_DELIVERY'')')}">
+                    
                     <div class="col-md-5">
                         <div class="glass-card text-center" th:classappend="${isCustomer ? 'user-active' : 'user-inactive'}">
                             <span class="status-badge">RECIPIENT</span>
                             <div class="avatar-box text-primary">
-                                <i class="fas fa-user-check"></i>
+                                <i class="fas fa-box"></i>
                             </div>
-                            <h4 class="mb-4 fw-bold" th:text="${conf != null and conf.customer != null ? conf.customer.username : 'Recipient'}">Customer Name</h4>
+                            <h4 class="mb-4 fw-bold" th:text="${conf?.customer?.username ?: 'Recipient'}">Customer Name</h4>
                             
                             <form th:action="@{/order/confirmation/tick}" method="post">
                                 <input type="hidden" name="orderId" th:value="${order.id}">
                                 <button type="submit" class="btn-confirm w-100"
-                                        th:classappend="${conf != null and conf.customerConfirmed ? 'btn-verified' : (isCustomer and conf != null ? 'btn-customer' : 'btn-disabled')}"
+                                        th:classappend="${conf?.customerConfirmed} ? 'btn-verified' : (${isCustomer} ? 'btn-customer' : 'btn-disabled')"
                                         th:disabled="${conf == null or conf.customerConfirmed or !isCustomer}">
-                                    <i class="me-2" th:classappend="${conf != null and conf.customerConfirmed ? 'fas fa-check-double' : 'fas fa-fingerprint'}"></i>
-                                    <span th:text="${conf != null and conf.customerConfirmed ? 'Identity Verified' : 'Confirm Receipt'}"></span>
+                                    <i class="me-2" th:classappend="${conf?.customerConfirmed} ? 'fas fa-check-double' : 'fas fa-hand-holding-box'"></i>
+                                    <span th:text="${conf?.customerConfirmed} ? 'Parcel Received' : 'Parcel Received'"></span>
                                 </button>
                             </form>
                         </div>
@@ -109,15 +111,18 @@
                             <div class="avatar-box text-success">
                                 <i class="fas fa-shipping-fast"></i>
                             </div>
-                            <h4 class="mb-4 fw-bold" th:text="${conf != null and conf.deliveryAgent != null ? conf.deliveryAgent.username : 'Pending...'}">Agent Name</h4>
+                            <h4 class="mb-4 fw-bold" th:text="${conf?.deliveryAgent?.username ?: 'Pending...'}">Agent Name</h4>
                             
                             <form th:action="@{/order/confirmation/tick}" method="post">
                                 <input type="hidden" name="orderId" th:value="${order.id}">
+                                
                                 <button type="submit" class="btn-confirm w-100"
-                                        th:classappend="${conf != null and conf.deliveryConfirmed ? 'btn-verified' : (isAgent and conf != null ? 'btn-agent' : 'btn-disabled')}"
-                                        th:disabled="${conf == null or conf.deliveryConfirmed or !isAgent}">
-                                    <i class="me-2" th:classappend="${conf != null and conf.deliveryConfirmed ? 'fas fa-check-double' : 'fas fa-box-open'}"></i>
-                                    <span th:text="${conf != null and conf.deliveryConfirmed ? 'Delivery Verified' : 'Confirm Delivery'}"></span>
+                                        th:classappend="${conf?.deliveryConfirmed} ? 'btn-verified' : (${isAgent and conf?.customerConfirmed} ? 'btn-agent' : 'btn-disabled')"
+                                        th:disabled="${conf == null or conf.deliveryConfirmed or !isAgent or !conf.customerConfirmed}">
+                                    
+                                    <i class="me-2" th:classappend="${conf?.deliveryConfirmed} ? 'fas fa-check-double' : (${conf?.customerConfirmed} ? 'fas fa-truck-check' : 'fas fa-lock')"></i>
+                                    
+                                    <span th:text="${conf?.deliveryConfirmed} ? 'Parcel Delivered' : (${conf?.customerConfirmed} ? 'Parcel Delivered' : 'Waiting for Customer...')"></span>
                                 </button>
                             </form>
                         </div>
@@ -127,20 +132,13 @@
                 <div class="text-center mt-5">
                     <p class="small text-muted">
                         <i class="fas fa-info-circle me-1"></i> 
-                        Both parties must confirm to complete the transaction.
+                        The customer must confirm receipt before the delivery agent can close the order.
                     </p>
                 </div>
             </div> 
         </div>
     </div>
 </div>
-
-<script th:inline="javascript">
-    const hasConf = [[${conf != null}]];
-    if (!hasConf) {
-        setTimeout(() => { window.location.reload(); }, 5000);
-    }
-</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
