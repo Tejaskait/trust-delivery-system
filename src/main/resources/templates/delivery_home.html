@@ -1,43 +1,52 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Delivery Feed - Trust Delivery</title>
+    <title>Agent Dashboard - Trust Delivery</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-dark bg-success mb-4 shadow-sm">
+<nav class="navbar navbar-dark bg-success mb-4 shadow">
     <div class="container">
-        <span class="navbar-brand mb-0 h1"><i class="fas fa-motorcycle me-2"></i> Agent Dashboard</span>
+        <span class="navbar-brand fw-bold"><i class="fas fa-motorcycle me-2"></i> Agent Portal</span>
         <a th:href="@{/logout}" class="btn btn-outline-light btn-sm">Logout</a>
     </div>
 </nav>
 
 <div class="container">
-    <h4 class="mb-4">Available Shipments <span class="badge bg-secondary" th:text="${orders.size()}">0</span></h4>
-
-    <div th:if="${orders.isEmpty()}" class="text-center mt-5">
-        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-        <p class="text-muted">No orders available right now. Check back soon!</p>
+   <div class="mb-5" th:if="${myTasks != null and !myTasks.isEmpty()}">
+        <h4 class="text-success mb-3"><i class="fas fa-route me-2"></i>Your Current Deliveries</h4>
+        <div th:each="task : ${myTasks}" class="card border-success shadow-sm mb-3">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1" th:text="${task.order.orderName}">Package</h5>
+                    <small class="text-muted"><i class="fas fa-location-dot me-1"></i> Destination: <span th:text="${task.order.orderedTo}">Address</span></small>
+                </div>
+                <button class="btn btn-success btn-sm">View Details</button>
+            </div>
+        </div>
     </div>
 
+    <h4 class="text-secondary mb-3"><i class="fas fa-boxes-stacked me-2"></i>Available Orders</h4>
     <div class="row">
-        <div th:each="order : ${orders}" class="col-md-6 mb-4">
+        <div th:if="${availableOrders.isEmpty()}" class="col-12 text-center py-5">
+            <p class="text-muted">No new orders at the moment...</p>
+        </div>
+        
+        <div th:each="order : ${availableOrders}" class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h5 class="card-title text-primary" th:text="${order.orderName}">Pizza</h5>
-                        <span class="badge bg-light text-dark border" th:text="${order.size}">Medium</span>
+                    <div class="d-flex justify-content-between">
+                        <h5 class="fw-bold" th:text="${order.orderName}">Item</h5>
+                        <span class="badge bg-info text-dark" th:text="${order.size}">Size</span>
                     </div>
                     <hr>
-                    <p class="mb-2"><strong><i class="fas fa-store text-danger me-2"></i>From:</strong> <span th:text="${order.orderedFrom}">Store</span></p>
-                    <p class="mb-3"><strong><i class="fas fa-home text-success me-2"></i>To:</strong> <span th:text="${order.orderedTo}">Address</span></p>
+                    <p class="small mb-1"><strong>Pickup:</strong> <span th:text="${order.orderedFrom}">From</span></p>
+                    <p class="small mb-3"><strong>Drop-off:</strong> <span th:text="${order.orderedTo}">To</span></p>
                     
                     <form th:action="@{'/delivery/accept-order/' + ${order.id}}" method="post">
-                        <button type="submit" class="btn btn-success w-100 fw-bold">
-                            <i class="fas fa-handshake me-2"></i>Accept Delivery
-                        </button>
+                        <button type="submit" class="btn btn-primary w-100">Accept Job</button>
                     </form>
                 </div>
             </div>
@@ -47,8 +56,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script th:if="${param.accepted}">
-    Swal.fire('Order Accepted!', 'Go to the pickup location immediately.', 'success');
+    Swal.fire('Job Secured!', 'The order is now in your active list.', 'success');
 </script>
-
 </body>
 </html>

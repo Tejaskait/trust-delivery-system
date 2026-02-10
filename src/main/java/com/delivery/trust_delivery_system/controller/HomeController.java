@@ -11,8 +11,5 @@ public class HomeController {
         return "customer_home"; 
     }
 
-    @GetMapping("/delivery/home")
-    public String deliveryHome() {
-        return "delivery_home"; 
-    }
+  
 }
