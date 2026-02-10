@@ -9,6 +9,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -18,44 +20,58 @@ public class DeliveryController {
     @Autowired private OrderRepository orderRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private OrderAssignmentRepository assignmentRepository;
+    @Autowired private OrderConfirmationRepository confirmationRepository; 
 
     @GetMapping("/home")
-public String deliveryHome(Model model, @AuthenticationPrincipal UserDetails currentUser) {
-    // 1. Get the user object
-    User agent = userRepository.findByUsername(currentUser.getUsername()).orElseThrow();
+    public String deliveryHome(Model model, @AuthenticationPrincipal UserDetails currentUser) {
+        User agent = userRepository.findByUsername(currentUser.getUsername())
+                .orElseThrow(() -> new RuntimeException("Agent not found"));
 
-    // 2. Fetch data (Ensure these return empty lists, not null)
-    List<Order> available = orderRepository.findByStatus(Order.OrderStatus.PLACED);
-    List<OrderAssignment> myTasks = assignmentRepository.findByDeliveryAgentAndStatusNot(
-            agent, OrderAssignment.AssignmentStatus.DELIVERED);
+        List<Order> available = orderRepository.findByStatus(Order.OrderStatus.PLACED);
+        
+        // Match the status to your AssignmentStatus enum (ACCEPTED, PICKED_UP, DELIVERED)
+        List<OrderAssignment> myTasks = assignmentRepository.findByDeliveryAgentAndStatusNot(
+                agent, OrderAssignment.AssignmentStatus.DELIVERED);
 
-    // 3. Force initialize if null (Extra safety for the Thymeleaf error)
-    if (available == null) available = new java.util.ArrayList<>();
-    if (myTasks == null) myTasks = new java.util.ArrayList<>();
-
-    // 4. Add to model - The names MUST match the HTML exactly
-    model.addAttribute("availableOrders", available);
-    model.addAttribute("myTasks", myTasks);
-    
-    return "delivery_home";
-}
+        model.addAttribute("availableOrders", (available != null) ? available : new ArrayList<>());
+        model.addAttribute("myTasks", (myTasks != null) ? myTasks : new ArrayList<>());
+        
+        return "delivery_home";
+    }
 
     @PostMapping("/accept-order/{orderId}")
-    public String acceptOrder(@PathVariable Long orderId, @AuthenticationPrincipal UserDetails currentUser) {
-        Order order = orderRepository.findById(orderId).orElseThrow();
-        User agent = userRepository.findByUsername(currentUser.getUsername()).orElseThrow();
+    public String acceptOrder(@PathVariable Long orderId, @AuthenticationPrincipal UserDetails userDetails) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        User agent = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Agent not found"));
 
-        // 1. Update Order status
+        if (order.getStatus() != Order.OrderStatus.PLACED) {
+            return "redirect:/delivery/home?error=already_taken";
+        }
+
+        // FIX 1: Using "OUT_FOR_DELIVERY" because "ACCEPTED" doesn't exist in OrderStatus
         order.setStatus(Order.OrderStatus.OUT_FOR_DELIVERY);
         orderRepository.save(order);
 
-        // 2. Create the Assignment record
+        // FIX 2: Create the Assignment using AssignmentStatus.ACCEPTED (which DOES exist)
         OrderAssignment assignment = new OrderAssignment();
         assignment.setOrder(order);
         assignment.setDeliveryAgent(agent);
+        assignment.setAcceptedAt(LocalDateTime.now());
         assignment.setStatus(OrderAssignment.AssignmentStatus.ACCEPTED);
         assignmentRepository.save(assignment);
 
-        return "redirect:/delivery/home?accepted";
+        // FIX 3: Initialize the confirmation record
+        OrderConfirmation confirmation = new OrderConfirmation();
+        confirmation.setOrder(order);
+        confirmation.setCustomer(order.getCustomer()); 
+        confirmation.setDeliveryAgent(agent);          
+        confirmation.setCustomerConfirmed(false);
+        confirmation.setDeliveryConfirmed(false);
+        confirmationRepository.save(confirmation);
+
+        return "redirect:/delivery/home?accepted=true";
     }
 }

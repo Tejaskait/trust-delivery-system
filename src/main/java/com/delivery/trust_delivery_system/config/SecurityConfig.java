@@ -13,30 +13,37 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Autowired
+    private CustomLoginSuccessHandler successHandler;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // This creates the bean that AuthController is looking for
         return new BCryptPasswordEncoder();
     }
 
-@Autowired
-private CustomLoginSuccessHandler successHandler;
-
-@Bean
-public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http
-        .csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/login", "/signup", "/css/**").permitAll()
-            .requestMatchers("/customer/**").hasRole("CUSTOMER")
-            .requestMatchers("/delivery/**").hasRole("DELIVERY")
-            .anyRequest().authenticated()
-        )
-        .formLogin(form -> form
-            .loginPage("/login")
-            .successHandler(successHandler) // Use the custom handler here
-            .permitAll()
-        );
-    return http.build();
-}
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            // Inside SecurityConfig.java
+.authorizeHttpRequests(auth -> auth
+    .requestMatchers("/login", "/signup", "/css/**", "/js/**").permitAll()
+    .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN") // Use Authority to match your Service
+    .requestMatchers("/customer/**").hasAuthority("ROLE_CUSTOMER")
+    .requestMatchers("/delivery/**").hasAuthority("ROLE_DELIVERY")
+    .anyRequest().authenticated()
+)
+            .formLogin(form -> form
+                .loginPage("/login")
+                .successHandler(successHandler)
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login?logout")
+                .permitAll()
+            );
+            
+        return http.build();
+    }
 }

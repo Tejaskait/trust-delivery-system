@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Trust Handoff | Secure Confirmation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #38bdf8;
+            --accent-success: #22c55e;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(34, 197, 94, 0.05) 0px, transparent 50%);
+            color: white;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        .main-wrapper { padding-top: 5rem; }
+
+        .handoff-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .user-active { border-color: var(--accent-primary); box-shadow: 0 0 20px rgba(56, 189, 248, 0.1); }
+        .user-inactive { opacity: 0.5; filter: grayscale(0.8); }
+
+        .avatar-box {
+            width: 80px; height: 80px; margin: 0 auto 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem;
+        }
+
+        .btn-confirm {
+            border-radius: 12px; padding: 0.8rem; font-weight: 600;
+            transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.5px; border: none;
+        }
+
+        .btn-customer { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; }
+        .btn-agent { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        .btn-verified { background: rgba(34, 197, 94, 0.15); color: var(--accent-success); border: 1px solid var(--accent-success); }
+        .btn-disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+
+        .status-badge {
+            font-size: 0.75rem; padding: 0.4rem 1rem; border-radius: 100px;
+            background: rgba(255, 255, 255, 0.05); color: var(--text-muted); margin-bottom: 1rem; display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container main-wrapper">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="handoff-container" th:with="isCustomer=${#authorization.expression('hasRole(''ROLE_CUSTOMER'')')}, 
+                                                   isAgent=${#authorization.expression('hasRole(''ROLE_DELIVERY'')')}">
+                
+                <div class="text-center mb-5">
+                    <h1 class="fw-bold mb-2">Secure Handoff</h1>
+                    <p class="text-secondary">Order ID: <span th:text="${order.id}" class="text-white">#001</span></p>
+                </div>
+
+                <div class="row g-4 justify-content-center">
+                    <div class="col-md-5">
+                        <div class="glass-card text-center" th:classappend="${isCustomer ? 'user-active' : 'user-inactive'}">
+                            <span class="status-badge">RECIPIENT</span>
+                            <div class="avatar-box text-primary">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <h4 class="mb-4 fw-bold" th:text="${conf != null and conf.customer != null ? conf.customer.username : 'Recipient'}">Customer Name</h4>
+                            
+                            <form th:action="@{/order/confirmation/tick}" method="post">
+                                <input type="hidden" name="orderId" th:value="${order.id}">
+                                <button type="submit" class="btn-confirm w-100"
+                                        th:classappend="${conf != null and conf.customerConfirmed ? 'btn-verified' : (isCustomer and conf != null ? 'btn-customer' : 'btn-disabled')}"
+                                        th:disabled="${conf == null or conf.customerConfirmed or !isCustomer}">
+                                    <i class="me-2" th:classappend="${conf != null and conf.customerConfirmed ? 'fas fa-check-double' : 'fas fa-fingerprint'}"></i>
+                                    <span th:text="${conf != null and conf.customerConfirmed ? 'Identity Verified' : 'Confirm Receipt'}"></span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5">
+                        <div class="glass-card text-center" th:classappend="${isAgent ? 'user-active' : 'user-inactive'}">
+                            <span class="status-badge">LOGISTICS PARTNER</span>
+                            <div class="avatar-box text-success">
+                                <i class="fas fa-shipping-fast"></i>
+                            </div>
+                            <h4 class="mb-4 fw-bold" th:text="${conf != null and conf.deliveryAgent != null ? conf.deliveryAgent.username : 'Pending...'}">Agent Name</h4>
+                            
+                            <form th:action="@{/order/confirmation/tick}" method="post">
+                                <input type="hidden" name="orderId" th:value="${order.id}">
+                                <button type="submit" class="btn-confirm w-100"
+                                        th:classappend="${conf != null and conf.deliveryConfirmed ? 'btn-verified' : (isAgent and conf != null ? 'btn-agent' : 'btn-disabled')}"
+                                        th:disabled="${conf == null or conf.deliveryConfirmed or !isAgent}">
+                                    <i class="me-2" th:classappend="${conf != null and conf.deliveryConfirmed ? 'fas fa-check-double' : 'fas fa-box-open'}"></i>
+                                    <span th:text="${conf != null and conf.deliveryConfirmed ? 'Delivery Verified' : 'Confirm Delivery'}"></span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div> 
+
+                <div class="text-center mt-5">
+                    <p class="small text-muted">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        Both parties must confirm to complete the transaction.
+                    </p>
+                </div>
+            </div> 
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const hasConf = [[${conf != null}]];
+    if (!hasConf) {
+        setTimeout(() => { window.location.reload(); }, 5000);
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
