@@ -67,7 +67,7 @@
                         <i class="fas fa-location-arrow me-2 text-success"></i>
                         <span th:text="${task.order.orderedTo}">Address</span>
                     </p>
-                    <a th:href="@{'/order/confirmation/' + ${task.order.id}}" class="btn btn-action w-100 text-decoration-none d-block">
+                    <a th:href="@{'/order/confirmation/' + ${task.order.id}}" class="btn btn-action w-100 text-decoration-none d-block">    
                         <i class="fas fa-fingerprint me-2"></i>Open Confirmation Hub
                     </a>
                 </div>

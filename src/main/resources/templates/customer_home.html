@@ -1,95 +1,147 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Customer Dashboard - Trust Delivery</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Customer Hub | Trust Delivery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .card { border: none; border-radius: 15px; }
-        .btn-success { border-radius: 10px; padding: 10px 20px; font-weight: 600; }
-        .form-control { border-radius: 8px; border: 1px solid #ddd; }
-        .order-list-card { transition: transform 0.2s; }
-        .order-list-card:hover { transform: translateY(-3px); }
+        :root {
+            --bg-dark: #0f172a;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-blue: #38bdf8;
+            --accent-purple: #818cf8;
+        }
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(at 100% 0%, rgba(56, 189, 248, 0.07) 0px, transparent 50%);
+            color: white; font-family: 'Inter', sans-serif; min-height: 100vh;
+        }
+        .glass-card {
+            background: var(--glass); backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: 20px;
+        }
+        .navbar {
+            background: rgba(15, 23, 42, 0.8) !important;
+            backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass-border);
+        }
+        .form-control, .input-group-text {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid var(--glass-border) !important;
+            color: white !important; border-radius: 12px;
+        }
+        .form-control:focus {
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.1);
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: none; border-radius: 12px; color: white;
+            padding: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        .btn-submit:hover {
+            transform: scale(1.02); opacity: 0.9;
+        }
+        .status-pill {
+            font-size: 0.7rem; padding: 0.3rem 0.8rem; border-radius: 100px;
+            background: rgba(56, 189, 248, 0.1); color: var(--accent-blue);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        .order-row {
+            transition: all 0.3s ease; border-bottom: 1px solid var(--glass-border);
+        }
+        .order-row:hover { background: rgba(255, 255, 255, 0.02); }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-primary mb-4 shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark mb-5 shadow-sm">
     <div class="container">
-        <span class="navbar-brand mb-0 h1"><i class="fas fa-truck-fast me-2"></i> Trust Delivery</span>
-        <a th:href="@{/logout}" class="btn btn-outline-light btn-sm">Logout</a>
+        <span class="navbar-brand fw-bold"><i class="fas fa-truck-fast me-2 text-info"></i>TRUST DELIVERY</span>
+        <div class="d-flex align-items-center">
+            <span class="text-secondary me-3 small">Welcome, <span th:text="${#authentication.name}">Customer</span></span>
+            <a th:href="@{/logout}" class="btn btn-outline-danger btn-sm rounded-pill px-3">Logout</a>
+        </div>
     </div>
 </nav>
 
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-lg-7">
-            <div class="card shadow-sm p-4 mb-5">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-primary text-white rounded-circle p-3 me-3">
-                        <i class="fas fa-shopping-basket fa-lg"></i>
-                    </div>
-                    <div>
-                        <h3 class="mb-0">Place New Order</h3>
-                        <small class="text-muted">Enter details below to find a delivery agent</small>
-                    </div>
-                </div>
-
+    <div class="row g-5">
+        <div class="col-lg-5">
+            <div class="glass-card p-4 sticky-top" style="top: 100px;">
+                <h4 class="mb-4 d-flex align-items-center">
+                    <i class="fas fa-plus-circle me-2 text-info"></i> Dispatch New Package
+                </h4>
                 <form th:action="@{/customer/place-order}" method="post">
-                    <div class="row mt-3">
-                        <div class="col-md-8 mb-3">
-                            <label class="form-label fw-bold">Item Name</label>
-                            <input type="text" name="orderName" class="form-control" placeholder="What are we delivering?" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">Size</label>
-                            <input type="text" name="size" class="form-control" placeholder="e.g. Small/2KG">
-                        </div>
-                    </div>
-
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Pickup Location</label>
+                        <label class="form-label small text-secondary">Package Contents</label>
+                        <input type="text" name="orderName" class="form-control" placeholder="Ex: Medical Supplies" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-secondary">Dimensions/Weight</label>
+                        <input type="text" name="size" class="form-control" placeholder="Ex: 5kg / Small Box">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-secondary">Pickup Point</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="fas fa-map-marker-alt text-danger"></i></span>
-                            <input type="text" name="orderedFrom" class="form-control border-start-0" placeholder="Store or House address" required>
+                            <span class="input-group-text"><i class="fas fa-map-pin"></i></span>
+                            <input type="text" name="orderedFrom" class="form-control" placeholder="Enter source address" required>
                         </div>
                     </div>
-
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Delivery Destination</label>
+                        <label class="form-label small text-secondary">Target Destination</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="fas fa-location-arrow text-primary"></i></span>
-                            <input type="text" name="orderedTo" class="form-control border-start-0" placeholder="Your address" required>
+                            <span class="input-group-text"><i class="fas fa-location-dot"></i></span>
+                            <input type="text" name="orderedTo" class="form-control" placeholder="Enter drop-off address" required>
                         </div>
                     </div>
-
-                    <button type="submit" class="btn btn-success w-100 shadow-sm">
-                        <i class="fas fa-check-circle me-2"></i>Confirm & Post Order
+                    <button type="submit" class="btn btn-submit w-100">
+                        Initiate Protocol
                     </button>
                 </form>
             </div>
-            
-            <div class="mb-5">
-                <h4 class="text-secondary mb-3"><i class="fas fa-list-check me-2"></i> Your Active Orders</h4>
-                
-                <div th:if="${myOrders == null or myOrders.isEmpty()}" class="text-center py-4 bg-white rounded shadow-sm">
-                    <p class="text-muted mb-0 italic">No orders placed yet. Start by filling the form above!</p>
-                </div>
+        </div>
 
-                <div th:each="order : ${myOrders}" class="card order-list-card shadow-sm mb-3 border-0">
-                    <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="col-lg-7">
+            <h4 class="text-secondary mb-4 d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-layer-group me-2"></i>Mission History</span>
+                <span class="badge bg-dark border border-secondary fw-light" style="font-size: 0.8rem;" th:text="${myOrders.size() + ' Active'}">0 Active</span>
+            </h4>
+
+            <div th:if="${myOrders.isEmpty()}" class="glass-card p-5 text-center">
+                <i class="fas fa-box-open fa-3x text-secondary mb-3 opacity-25"></i>
+                <p class="text-muted">No active missions found in your secure history.</p>
+            </div>
+
+            <div th:each="order : ${myOrders}" class="glass-card mb-3 overflow-hidden">
+                <div class="p-4 order-row">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
-                            <h5 class="fw-bold mb-1" th:text="${order.orderName}">Package Name</h5>
-                            <div class="d-flex gap-2 align-items-center">
-                                <span class="badge bg-info text-dark" th:text="${order.status}">Status</span>
-                                <small class="text-muted"><i class="fas fa-calendar-alt me-1"></i> <span th:text="${#temporals.format(order.createdAt, 'dd MMM, HH:mm')}"></span></small>
-                            </div>
+                            <h5 class="fw-bold text-white mb-1" th:text="${order.orderName}">Package</h5>
+                            <small class="text-info opacity-75" th:text="${order.size}">Size</small>
                         </div>
-                        
-                        <a th:href="@{'/order/confirmation/' + ${order.id}}" class="btn btn-outline-primary btn-sm px-3">
-                            View Details <i class="fas fa-arrow-right ms-1"></i>
+                        <span class="status-pill" th:text="${order.status}">PENDING</span>
+                    </div>
+                    
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <div class="small text-secondary text-uppercase" style="font-size: 0.6rem;">Origin</div>
+                            <div class="small text-white-50 text-truncate" th:text="${order.orderedFrom}">Address</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-secondary text-uppercase" style="font-size: 0.6rem;">Destination</div>
+                            <div class="small text-white-50 text-truncate" th:text="${order.orderedTo}">Address</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-secondary">
+                            <i class="far fa-clock me-1"></i> 
+                            <span th:text="${#temporals.format(order.createdAt, 'dd MMM, HH:mm')}">Time</span>
+                        </small>
+                        <a th:href="@{'/order/confirmation/' + ${order.id}}" class="btn btn-sm btn-outline-info rounded-pill px-4">
+                            Track Pulse
                         </a>
                     </div>
                 </div>
@@ -98,13 +150,13 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script th:if="${param.orderSuccess}">
     Swal.fire({
-        title: 'Order Placed!',
-        text: 'Your order has been posted. Delivery agents can now see it!',
-        icon: 'success',
-        confirmButtonColor: '#0d6efd',
-        confirmButtonText: 'Great!'
+        background: '#0f172a', color: '#fff',
+        icon: 'success', title: 'Mission Logged',
+        text: 'Your delivery request is now broadcasting to available agents.',
+        confirmButtonColor: '#38bdf8'
     });
 </script>
 
