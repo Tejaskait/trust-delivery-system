@@ -18,21 +18,19 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
         
-        // Converts the authorities list into a Set of strings for easier checking
         Set<String> roles = AuthorityUtils.authorityListToSet(authentication.getAuthorities());
         
         String redirectUrl = "/login?error";
 
-        // Logic to prioritize and redirect based on role
-        if (roles.contains("ROLE_ADMIN")) {
+        // Logic updated to check for raw database strings (ADMIN, DELIVERY, CUSTOMER)
+        if (roles.contains("ADMIN") || roles.contains("ROLE_ADMIN")) {
             redirectUrl = "/admin/home";
-        } else if (roles.contains("ROLE_DELIVERY")) {
+        } else if (roles.contains("DELIVERY") || roles.contains("ROLE_DELIVERY")) {
             redirectUrl = "/delivery/home";
-        } else if (roles.contains("ROLE_CUSTOMER")) {
+        } else if (roles.contains("CUSTOMER") || roles.contains("ROLE_CUSTOMER")) {
             redirectUrl = "/customer/home";
         }
 
-        // Log for debugging (you'll see this in your IDE console)
         System.out.println("User authenticated. Roles: " + roles + " -> Redirecting to: " + redirectUrl);
 
         response.sendRedirect(redirectUrl);

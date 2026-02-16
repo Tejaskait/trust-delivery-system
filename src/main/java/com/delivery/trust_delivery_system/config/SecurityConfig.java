@@ -24,15 +24,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            // Inside SecurityConfig.java
-.authorizeHttpRequests(auth -> auth
-    .requestMatchers("/login", "/signup", "/css/**", "/js/**").permitAll()
-    .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN") // Use Authority to match your Service
-    .requestMatchers("/customer/**").hasAuthority("ROLE_CUSTOMER")
-    .requestMatchers("/delivery/**").hasAuthority("ROLE_DELIVERY")
-    .anyRequest().authenticated()
-)
+            .csrf(csrf -> csrf.disable()) // Keep this disabled for your POST forms
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login", "/signup", "/css/**", "/js/**", "/images/**").permitAll()
+                
+                // Broadening the matchers to ensure all sub-pages are covered
+                .requestMatchers("/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                .requestMatchers("/delivery/**").hasAnyAuthority("ROLE_DELIVERY", "DELIVERY")
+                .requestMatchers("/customer/**").hasAnyAuthority("ROLE_CUSTOMER", "CUSTOMER")
+                
+                // Explicitly allow the order handoff routes for any authenticated user
+                .requestMatchers("/order/**").authenticated() 
+                
+                .anyRequest().authenticated()
+            )
             .formLogin(form -> form
                 .loginPage("/login")
                 .successHandler(successHandler)
@@ -41,6 +46,8 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
+                .invalidateHttpSession(true) // Clears the session on logout
+                .deleteCookies("JSESSIONID")
                 .permitAll()
             );
             
